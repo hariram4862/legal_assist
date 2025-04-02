@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "852531365399",
+    "project_id": "legalassist-ecdca",
+    "storage_bucket": "legalassist-ecdca.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:852531365399:android:6d0053ebf56257c083be52",
+        "android_client_info": {
+          "package_name": "com.example.legal_assist"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC8LE2_Lyi4QZpszp7MDrMkXjj_FeNTzws"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
