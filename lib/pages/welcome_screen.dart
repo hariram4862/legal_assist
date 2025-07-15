@@ -15,16 +15,18 @@ class WelcomeScreen extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
               const Text(
-                'Welcome to LawAssist',
+                'Welcome to Voice Intelligence Engine',
                 style: TextStyle(
-                    fontSize: 24,
-                    color: Color(0xFF3A6EA5), // Deep Blue
-                    fontWeight: FontWeight.bold),
+                  fontSize: 26,
+                  color: Color(0xFF3A6EA5), // Deep Blue
+                  fontWeight: FontWeight.bold,
+                ),
+                textAlign: TextAlign.center,
               ),
               const SizedBox(height: 20),
               const Text(
-                'Your Legal Research and Learning Companion',
-                style: TextStyle(fontSize: 16, color: Colors.black87),
+                'Your AI-powered Voice Assistant\nfor Seamless Conversations',
+                style: TextStyle(fontSize: 18, color: Colors.black87),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 50),
@@ -33,16 +35,21 @@ class WelcomeScreen extends StatelessWidget {
                   backgroundColor: const Color(0xFF3A6EA5),
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(30.0)),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
+                    borderRadius: BorderRadius.circular(30.0),
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 40,
+                    vertical: 15,
+                  ),
                 ),
                 child: const Text('Get Started'),
                 onPressed: () {
                   Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (context) => const LoginScreen()));
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const LoginScreen(),
+                    ),
+                  );
                 },
               ),
             ],
