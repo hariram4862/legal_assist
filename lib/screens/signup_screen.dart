@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:legal_assist/screens/loading_screen.dart';
 import 'home_screen.dart';
 import 'package:dio/dio.dart';
 import 'package:intl/intl.dart';
@@ -47,14 +48,14 @@ class _SignUpScreenState extends State<SignUpScreen> {
       );
     });
 
-    _auth.authStateChanges().listen((User? user) {
-      if (user != null) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const HomePage()),
-        );
-      }
-    });
+    // _auth.authStateChanges().listen((User? user) {
+    //   if (user != null) {
+    //     Navigator.pushReplacement(
+    //       context,
+    //       MaterialPageRoute(builder: (_) => const HomePage()),
+    //     );
+    //   }
+    // });
   }
 
   @override
@@ -224,7 +225,12 @@ class _SignUpScreenState extends State<SignUpScreen> {
         email: email,
         password: password,
       );
-
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => const LoadingScreen(message: 'Signing up...'),
+        ),
+      );
       Dio dio = Dio();
       final response = await dio.post(
         'https://refined-able-grouper.ngrok-free.app/register_user',
@@ -238,11 +244,14 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
       if (!mounted) return;
       if (response.statusCode == 200) {
-        Navigator.pushReplacement(
+        Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(builder: (_) => const HomePage()),
+          (Route<dynamic> route) => false,
         );
       } else {
+        Navigator.pop(context); // close LoadingScreen
+
         _showToast("Server error: ${response.statusCode}");
       }
     } on FirebaseAuthException catch (e) {

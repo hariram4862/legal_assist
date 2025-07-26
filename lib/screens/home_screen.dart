@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:legal_assist/widgets/home_screen/prompt_service.dart';
-import 'package:legal_assist/widgets/home_screen/file_service.dart';
+import 'package:legal_assist/widgets/home_screen/send_prompt.dart';
 import 'package:legal_assist/widgets/home_screen/input_bar.dart';
 import 'package:legal_assist/widgets/home_screen/message_list.dart';
 import 'package:legal_assist/widgets/home_screen/picked_files_dialog.dart';
@@ -32,6 +31,7 @@ class _HomePageState extends State<HomePage> {
   final AudioService _audioService = AudioService();
 
   bool get _isRecording => _audioService.isRecording;
+  bool _isTranscribing = false;
 
   @override
   void initState() {
@@ -84,16 +84,25 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _stopRecording() async {
+    setState(() {
+      _isTranscribing = true;
+    });
+
     await _audioService.stopRecording(
-      onResult: (text) => setState(() => _promptController.text = text),
+      onResult: (text) {
+        setState(() {
+          _promptController.text = text;
+          _isTranscribing = false;
+        });
+      },
     );
-    setState(() {});
   }
 
   Future<void> _handleSend() async {
     final prompt = _promptController.text.trim();
     final hasPrompt = prompt.isNotEmpty;
     final hasFiles = _pickedFiles.isNotEmpty;
+    FocusScope.of(context).unfocus();
 
     if (hasPrompt || hasFiles) {
       if (hasPrompt) {
@@ -103,20 +112,26 @@ class _HomePageState extends State<HomePage> {
           _messages.add({'role': 'bot', 'text': '...typing...'});
         });
 
-        final reply = await PromptService().sendPrompt(
-          prompt,
-          user?.email,
-          _currentSessionId,
+        final reply = await FileService().process(
+          prompt: prompt,
+          email: user?.email,
+          sessionId: _currentSessionId,
         );
 
         setState(() {
           _messages.removeLast();
           _messages.add({'role': 'bot', 'text': reply});
         });
+      } else if (hasFiles) {
+        // Only files uploaded, show placeholder user message
+        setState(() {
+          _messages.add({'role': 'user', 'text': '📁 Uploaded document(s)'});
+          _messages.add({'role': 'bot', 'text': '...typing...'});
+        });
       }
 
       if (hasFiles) {
-        await FileService().uploadFiles(_pickedFiles);
+        await FileService().process(files: _pickedFiles);
         setState(() => _pickedFiles.clear());
       }
     }
@@ -132,8 +147,12 @@ class _HomePageState extends State<HomePage> {
   }
 
   void _showPickedFilesDialog() {
-    showPickedFilesDialog(context, _pickedFiles, (_) {
-      setState(() {}); // Trigger rebuild after dialog removes item
+    showPickedFilesDialog(context, _pickedFiles, (updatedFiles) {
+      setState(() {
+        _pickedFiles
+          ..clear()
+          ..addAll(updatedFiles);
+      });
     });
   }
 
@@ -224,6 +243,7 @@ class _HomePageState extends State<HomePage> {
             promptController: _promptController,
             pickedFiles: _pickedFiles,
             isRecording: _isRecording,
+            isTranscribing: _isTranscribing,
             onSend: _handleSend,
             onMicTap: _toggleRecording,
             onPickFiles: _pickFile,

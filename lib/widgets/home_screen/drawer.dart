@@ -1,9 +1,10 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:legal_assist/screens/change_pw.dart';
 import 'package:legal_assist/screens/chat_history_screen.dart';
-import 'package:legal_assist/screens/login_screen.dart';
 import 'package:legal_assist/screens/profile_screen.dart';
+import 'package:legal_assist/screens/welcome_screen.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -32,9 +33,24 @@ class _CustomDrawerState extends State<CustomDrawer> {
 
   void _logout(BuildContext context) async {
     await FirebaseAuth.instance.signOut();
-    if (!mounted) return;
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (context) => const LoginScreen()),
+
+    if (!context.mounted) return;
+
+    _showToast("Logged out");
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (context) => const WelcomeScreen()),
+      (Route<dynamic> route) => false,
+    );
+  }
+
+  void _showToast(String msg) {
+    Fluttertoast.showToast(
+      msg: msg,
+      toastLength: Toast.LENGTH_SHORT,
+      gravity: ToastGravity.BOTTOM,
+      backgroundColor: Colors.black87,
+      textColor: Colors.white,
+      fontSize: 16.0,
     );
   }
 

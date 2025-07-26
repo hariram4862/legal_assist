@@ -10,6 +10,7 @@ class InputBar extends StatefulWidget {
   final VoidCallback onPickFiles;
   final VoidCallback onSend;
   final VoidCallback onShowPickedFiles;
+  final bool isTranscribing;
 
   const InputBar({
     super.key,
@@ -20,6 +21,7 @@ class InputBar extends StatefulWidget {
     required this.onPickFiles,
     required this.onSend,
     required this.onShowPickedFiles,
+    required this.isTranscribing,
   });
 
   @override
@@ -28,11 +30,50 @@ class InputBar extends StatefulWidget {
 
 class _InputBarState extends State<InputBar> {
   final ScrollController _scrollController = ScrollController();
+  bool _showExtendedIcons = false;
+
+  Widget buildIconButton({
+    required VoidCallback onTap,
+    VoidCallback? onLongPress,
+    required IconData icon,
+    Color color = Colors.black,
+    String? tooltip,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      onLongPress: onLongPress,
+      child: Container(
+        width: 40,
+        height: 40,
+        alignment: Alignment.center,
+        decoration: const BoxDecoration(shape: BoxShape.circle),
+        child: Tooltip(
+          message: tooltip ?? '',
+          child: Icon(icon, color: color, size: 24),
+        ),
+      ),
+    );
+  }
 
   @override
   void dispose() {
     _scrollController.dispose();
     super.dispose();
+  }
+
+  void _toggleIconPanel() {
+    setState(() {
+      _showExtendedIcons = !_showExtendedIcons;
+    });
+
+    // Optional auto-hide after delay
+    Future.delayed(const Duration(seconds: 5), () {
+      if (mounted) {
+        setState(() {
+          _showExtendedIcons = false;
+        });
+      }
+    });
   }
 
   @override
@@ -56,9 +97,7 @@ class _InputBarState extends State<InputBar> {
         children: [
           Expanded(
             child: Container(
-              constraints: const BoxConstraints(
-                maxHeight: 100, // fixed height for up to 4 lines
-              ),
+              constraints: const BoxConstraints(maxHeight: 100),
               child: Scrollbar(
                 thumbVisibility: true,
                 controller: _scrollController,
@@ -99,52 +138,69 @@ class _InputBarState extends State<InputBar> {
             ),
           ),
           const SizedBox(width: 6),
-          if (widget.pickedFiles.isNotEmpty)
-            Stack(
-              alignment: Alignment.center,
-              children: [
-                IconButton(
-                  icon: const Icon(
-                    Icons.insert_drive_file,
-                    color: Colors.black,
+
+          // Conditionally show extended icons
+          if (_showExtendedIcons) ...[
+            Transform.translate(
+              offset: const Offset(0, -4),
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  buildIconButton(
+                    onTap:
+                        widget.pickedFiles.isEmpty
+                            ? widget.onPickFiles
+                            : widget.onShowPickedFiles, // ⬅️ logic switch here
+                    icon: Icons.attach_file,
                   ),
-                  onPressed: widget.onShowPickedFiles,
-                ),
-                Positioned(
-                  right: 4,
-                  top: 4,
-                  child: CircleAvatar(
-                    radius: 10,
-                    backgroundColor: Colors.red,
-                    child: Text(
-                      '${widget.pickedFiles.length}',
-                      style: GoogleFonts.poppins(
-                        fontSize: 11,
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
+                  if (widget.pickedFiles.isNotEmpty)
+                    Positioned(
+                      right: 6,
+                      top: 4,
+                      child: Container(
+                        padding: const EdgeInsets.only(
+                          top: 0.8,
+                          left: 0.5,
+                          right: 0.5,
+                          bottom: 0,
+                        ),
+                        decoration: const BoxDecoration(
+                          color: Colors.red,
+                          shape: BoxShape.circle,
+                        ),
+                        constraints: const BoxConstraints(
+                          minWidth: 13.5,
+                          minHeight: 13.5,
+                        ),
+                        child: Text(
+                          '${widget.pickedFiles.length}',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 8.5,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
                       ),
                     ),
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
-          IconButton(
-            icon: const Icon(Icons.attach_file, color: Colors.black),
-            onPressed: widget.onPickFiles,
-            tooltip: "Attach file",
-          ),
-          IconButton(
-            icon: const Icon(Icons.send, color: Colors.black),
-            onPressed: widget.onSend,
-            tooltip: "Send message",
-          ),
-          IconButton(
-            icon: Icon(
-              widget.isRecording ? Icons.mic_off : Icons.mic,
-              color: widget.isRecording ? Colors.red : Colors.black,
+
+            Transform.translate(
+              offset: const Offset(0, -4),
+              child: buildIconButton(onTap: widget.onMicTap, icon: Icons.mic),
             ),
-            onPressed: widget.onMicTap,
-            tooltip: widget.isRecording ? "Stop recording" : "Start recording",
+          ],
+
+          // Long press-enabled Send button
+          Transform.translate(
+            offset: const Offset(0, -4), // Adjust this value to shift up
+            child: buildIconButton(
+              onTap: widget.onSend,
+              onLongPress: _toggleIconPanel,
+              icon: Icons.send,
+            ),
           ),
         ],
       ),

@@ -1,6 +1,8 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:fluttertoast/fluttertoast.dart';
+import 'package:legal_assist/screens/loading_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'home_screen.dart';
 import 'signup_screen.dart';
@@ -25,10 +27,27 @@ class _LoginScreenState extends State<LoginScreen> {
 
   bool _passwordVisible = false;
   bool _showPasswordToggle = false;
+  void _handleForgotPassword() {
+    if (_emailController.text.trim().isEmpty) {
+      _showToast("Please enter your email to reset password.");
+      return;
+    }
+
+    _auth
+        .sendPasswordResetEmail(email: _emailController.text.trim())
+        .then((_) {
+          _showToast("Password reset link sent to your email.");
+        })
+        .catchError((error) {
+          _showToast("Error: ${error.message}");
+        });
+  }
 
   @override
   void initState() {
     super.initState();
+    _emailController.clear();
+    _passwordController.clear();
     _passwordController.addListener(() {
       setState(() {
         _showPasswordToggle = _passwordController.text.isNotEmpty;
@@ -111,6 +130,19 @@ class _LoginScreenState extends State<LoginScreen> {
                           : null,
                 ),
               ),
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton(
+                  onPressed: _handleForgotPassword,
+                  child: Text(
+                    'Forgot Password?',
+                    style: GoogleFonts.poppins(
+                      color: Colors.black,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ),
               const SizedBox(height: 30),
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
@@ -158,9 +190,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future<void> _handleLogin() async {
     if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please fill in all fields.")),
-      );
+      _showToast("Please fill in all fields.");
       return;
     }
 
@@ -170,36 +200,58 @@ class _LoginScreenState extends State<LoginScreen> {
         password: _passwordController.text,
       );
 
+      // ✅ Navigate to loading screen
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => const LoadingScreen(message: 'Logging in...'),
+        ),
+      );
+
       Dio dio = Dio();
       final response = await dio.post(
         'https://refined-able-grouper.ngrok-free.app/update_last_login',
         data: FormData.fromMap({
           'email': _emailController.text.trim(),
-          'last_login': lastLoginAt,
+          'last_login_at': DateFormat(
+            'dd-MM-yyyy HH:mm:ss',
+          ).format(DateTime.now()),
         }),
       );
 
       if (response.statusCode == 200) {
-        _saveUserProfile(userCredential.user?.email ?? "");
+        await _saveUserProfile(userCredential.user?.email ?? "");
+
         if (!mounted) return;
-        Navigator.pushReplacement(
+
+        // ✅ Replace loading screen with home screen
+        Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(builder: (_) => const HomePage()),
+          (Route<dynamic> route) => false,
         );
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Server error: ${response.statusCode}')),
-        );
+        Navigator.pop(context); // close LoadingScreen
+        _showToast('Server error: ${response.statusCode}');
       }
     } on FirebaseAuthException catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text("Login failed: ${e.message}")));
+      _showToast("Login failed: ${e.message}");
     }
   }
 
   Future<void> _saveUserProfile(String email) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     prefs.setString('userEmail', email);
+  }
+
+  void _showToast(String msg) {
+    Fluttertoast.showToast(
+      msg: msg,
+      toastLength: Toast.LENGTH_SHORT,
+      gravity: ToastGravity.BOTTOM,
+      backgroundColor: Colors.black87,
+      textColor: Colors.white,
+      fontSize: 16.0,
+    );
   }
 }
