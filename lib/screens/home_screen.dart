@@ -131,7 +131,11 @@ class _HomePageState extends State<HomePage> {
       }
 
       if (hasFiles) {
-        await FileService().process(files: _pickedFiles);
+        await FileService().process(
+          files: _pickedFiles,
+          email: user?.email,
+          sessionId: _currentSessionId,
+        );
         setState(() => _pickedFiles.clear());
       }
     }

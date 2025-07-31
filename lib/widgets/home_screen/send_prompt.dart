@@ -21,9 +21,12 @@ class FileService {
     String? email,
     String? sessionId,
   }) async {
-    final formData = FormData();
+    final formData = FormData.fromMap({
+      if (prompt != null && prompt.trim().isNotEmpty) 'prompt': prompt,
+      if (email != null) 'email': email,
+      if (sessionId != null) 'session_id': sessionId,
+    });
 
-    // Add files if provided
     if (files != null && files.isNotEmpty) {
       for (var file in files) {
         formData.files.add(
@@ -35,11 +38,6 @@ class FileService {
       }
     }
 
-    // Add prompt if provided
-    if (prompt != null && prompt.trim().isNotEmpty) {
-      formData.fields.add(MapEntry('prompt', prompt));
-    }
-
     try {
       final response = await _dio.post(
         _queryUrl,
@@ -48,9 +46,8 @@ class FileService {
       );
 
       final reply = response.data['response'] ?? '✅ Request completed.';
-      // final uploadResults = response.data['upload_results'];
 
-      // Save message only if prompt was sent
+      // Save prompt-response only if prompt was submitted
       if (prompt != null && prompt.trim().isNotEmpty) {
         final savePayload = {
           'email': email ?? 'unknown',
