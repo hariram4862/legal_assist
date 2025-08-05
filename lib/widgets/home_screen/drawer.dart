@@ -1,7 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
-import 'package:legal_assist/screens/change_pw.dart';
+// import 'package:legal_assist/screens/change_pw.dart';
 import 'package:legal_assist/screens/chat_history_screen.dart';
 import 'package:legal_assist/screens/profile_screen.dart';
 import 'package:legal_assist/screens/welcome_screen.dart';
@@ -9,16 +9,12 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class CustomDrawer extends StatefulWidget {
-  final bool isDarkTheme;
-  final Function(bool) onThemeToggle;
   final User? user;
   final Function(String sessionId, List<Map<String, String>> messages)
   onSessionSelected;
 
   const CustomDrawer({
     super.key,
-    required this.isDarkTheme,
-    required this.onThemeToggle,
     required this.user,
     required this.onSessionSelected,
   });
@@ -83,19 +79,7 @@ class _CustomDrawerState extends State<CustomDrawer> {
                   backgroundImage: const AssetImage('assets/images/logo.jpg'),
                   backgroundColor: Colors.grey.shade200,
                 ),
-                Positioned(
-                  top: 0,
-                  right: 0,
-                  child: IconButton(
-                    icon: Icon(
-                      widget.isDarkTheme
-                          ? Icons.dark_mode_outlined
-                          : Icons.light_mode_outlined,
-                      color: Colors.black,
-                    ),
-                    onPressed: () => widget.onThemeToggle(!widget.isDarkTheme),
-                  ),
-                ),
+
                 Positioned(
                   bottom: 4,
                   child: TextButton.icon(
@@ -138,18 +122,18 @@ class _CustomDrawerState extends State<CustomDrawer> {
               }
             },
           ),
-          _buildDrawerItem(
-            icon: Icons.lock_outline,
-            text: "Change Password",
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const ChangePasswordScreen(),
-                ),
-              );
-            },
-          ),
+          // _buildDrawerItem(
+          //   icon: Icons.lock_outline,
+          //   text: "Change Password",
+          //   onTap: () {
+          //     Navigator.push(
+          //       context,
+          //       MaterialPageRoute(
+          //         builder: (context) => const ChangePasswordScreen(),
+          //       ),
+          //     );
+          //   },
+          // ),
           _buildDrawerItem(
             icon: Icons.logout,
             text: "Log Out",

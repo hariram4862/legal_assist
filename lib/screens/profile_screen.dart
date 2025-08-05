@@ -1,6 +1,14 @@
+// In pubspec.yaml, make sure you have:
+// shimmer: ^3.0.0
+// google_fonts: ^6.1.0
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
+import 'package:fluttertoast/fluttertoast.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:legal_assist/screens/change_pw.dart';
+import 'package:shimmer/shimmer.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -14,6 +22,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   String _originalUserName = '';
   String _userEmail = '';
   bool _showUpdateButton = false;
+  bool _isLoading = true;
 
   final TextEditingController _nameController = TextEditingController();
 
@@ -47,6 +56,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           _originalUserName = _userName;
           _userEmail = data["email"] ?? "N/A";
           _nameController.text = _userName;
+          _isLoading = false;
         });
       }
     }
@@ -66,9 +76,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
       if (response.statusCode == 200 &&
           response.data['message'].toString().contains("updated")) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text("✅ Profile updated")));
+        _showToast("Username updated");
         setState(() {
           _originalUserName = _nameController.text;
           _showUpdateButton = false;
@@ -77,9 +85,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         throw Exception("Update failed");
       }
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text("❌ Update failed: $e")));
+      _showToast("❌ Update failed: $e");
     }
   }
 
@@ -95,61 +101,196 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _loadUserData();
   }
 
+  void _showToast(String msg) {
+    Fluttertoast.showToast(
+      msg: msg,
+      toastLength: Toast.LENGTH_SHORT,
+      gravity: ToastGravity.BOTTOM,
+      backgroundColor: Colors.black87,
+      textColor: Colors.white,
+      fontSize: 16.0,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final textStyle = GoogleFonts.poppins(color: Colors.black);
+
     return Scaffold(
-      appBar: AppBar(title: const Text('Profile')),
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        title: Text('Profile', style: GoogleFonts.poppins(color: Colors.black)),
+        backgroundColor: Colors.white,
+        elevation: 0,
+        iconTheme: const IconThemeData(color: Colors.black),
+      ),
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start, // or center if needed
-            children: [
-              const CircleAvatar(
-                radius: 50,
-                backgroundImage: AssetImage('assets/images/logo.jpg'),
-              ),
-              const SizedBox(height: 20),
-              TextField(
-                controller: _nameController,
-                decoration: const InputDecoration(labelText: 'Name'),
-                onChanged: _onNameChanged,
-              ),
-              const SizedBox(height: 10),
-              TextField(
-                readOnly: true,
-                decoration: InputDecoration(
-                  labelText: 'Email',
-                  hintText: _userEmail,
-                  border: const OutlineInputBorder(),
-                ),
-              ),
-              const SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: () async {
-                  await FirebaseAuth.instance.sendPasswordResetEmail(
-                    email: _userEmail,
-                  );
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text("Password reset link sent")),
-                  );
-                },
-                child: const Text("Change Password"),
-              ),
-              if (_showUpdateButton) ...[
-                const SizedBox(height: 20),
-                ElevatedButton.icon(
-                  onPressed: _updateUserProfile,
-                  icon: const Icon(Icons.save),
-                  label: const Text("Update Profile"),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green,
+        child:
+            _isLoading
+                ? _buildShimmer()
+                : SingleChildScrollView(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      const CircleAvatar(
+                        radius: 50,
+                        backgroundImage: AssetImage('assets/images/logo.jpg'),
+                      ),
+                      const SizedBox(height: 30),
+
+                      // Name Field
+                      TextField(
+                        controller: _nameController,
+                        style: textStyle,
+                        onChanged: _onNameChanged,
+                        decoration: InputDecoration(
+                          labelText: 'Full Name',
+                          labelStyle: GoogleFonts.poppins(
+                            color: Colors.grey[700],
+                          ),
+                          filled: true,
+                          fillColor: Colors.grey[200],
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide.none,
+                          ),
+                          prefixIcon: const Icon(
+                            Icons.person,
+                            color: Colors.black,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+
+                      // Email Field (Read-only with controller)
+                      TextField(
+                        readOnly: true,
+                        controller: TextEditingController(text: _userEmail),
+                        style: textStyle,
+                        decoration: InputDecoration(
+                          labelText: 'Email',
+                          labelStyle: GoogleFonts.poppins(
+                            color: Colors.grey[700],
+                          ),
+                          filled: true,
+                          fillColor: Colors.grey[200],
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide.none,
+                          ),
+                          prefixIcon: const Icon(
+                            Icons.email,
+                            color: Colors.black,
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(height: 12),
+
+                      // Change Password as TextButton
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: TextButton(
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder:
+                                    (context) => const ChangePasswordScreen(),
+                              ),
+                            );
+                          },
+                          child: Text(
+                            "Change Password?",
+                            style: GoogleFonts.poppins(
+                              color: Colors.black,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(height: 30),
+
+                      // Update Button Always Visible
+                      ElevatedButton.icon(
+                        onPressed:
+                            _showUpdateButton ? _updateUserProfile : null,
+                        // icon: const Icon(Icons.save),
+                        label: const Text("Update Profile"),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.black,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 50,
+                            vertical: 15,
+                          ),
+                          textStyle: GoogleFonts.poppins(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(24),
+                          ),
+                        ).copyWith(
+                          backgroundColor:
+                              WidgetStateProperty.resolveWith<Color?>(
+                                (states) =>
+                                    _showUpdateButton
+                                        ? Colors.black
+                                        : Colors.grey.shade400,
+                              ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              ],
-            ],
+      ),
+    );
+  }
+
+  Widget _buildShimmer() {
+    return Padding(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        children: [
+          Shimmer.fromColors(
+            baseColor: Colors.grey.shade300,
+            highlightColor: Colors.grey.shade100,
+            child: const CircleAvatar(radius: 50),
           ),
-        ),
+          const SizedBox(height: 20),
+          Shimmer.fromColors(
+            baseColor: Colors.grey.shade300,
+            highlightColor: Colors.grey.shade100,
+            child: Container(
+              height: 50,
+              width: double.infinity,
+              color: Colors.white,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Shimmer.fromColors(
+            baseColor: Colors.grey.shade300,
+            highlightColor: Colors.grey.shade100,
+            child: Container(
+              height: 50,
+              width: double.infinity,
+              color: Colors.white,
+            ),
+          ),
+          const SizedBox(height: 20),
+          Shimmer.fromColors(
+            baseColor: Colors.grey.shade300,
+            highlightColor: Colors.grey.shade100,
+            child: Container(
+              height: 50,
+              width: double.infinity,
+              color: Colors.white,
+            ),
+          ),
+        ],
       ),
     );
   }

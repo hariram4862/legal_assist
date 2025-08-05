@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:fluttertoast/fluttertoast.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class ChangePasswordScreen extends StatefulWidget {
   const ChangePasswordScreen({super.key});
@@ -18,15 +20,28 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
       TextEditingController();
 
   bool _isLoading = false;
-  final FirebaseAuth _auth = FirebaseAuth.instance;
+  bool _showCurrentPassword = false;
+  bool _showNewPassword = false;
+  bool _showConfirmPassword = false;
 
-  void _showSnackBar(String message, {bool isError = false}) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: isError ? Colors.red : Colors.green,
-      ),
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  void _showToast(String msg) {
+    Fluttertoast.showToast(
+      msg: msg,
+      toastLength: Toast.LENGTH_SHORT,
+      gravity: ToastGravity.BOTTOM,
+      backgroundColor: Colors.black87,
+      textColor: Colors.white,
+      fontSize: 16.0,
     );
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _currentPasswordController.addListener(() => setState(() {}));
+    _newPasswordController.addListener(() => setState(() {}));
+    _confirmPasswordController.addListener(() => setState(() {}));
   }
 
   Future<void> _changePassword() async {
@@ -38,33 +53,33 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
     final newPassword = _newPasswordController.text.trim();
 
     if (email == null) {
-      _showSnackBar("No user is logged in.", isError: true);
+      _showToast("No user is logged in.");
+
       return;
     }
 
     setState(() => _isLoading = true);
 
     try {
-      // Re-authenticate the user
       final cred = EmailAuthProvider.credential(
         email: email,
         password: currentPassword,
       );
       await user!.reauthenticateWithCredential(cred);
 
-      // Update the password
       await user.updatePassword(newPassword);
-      _showSnackBar("Password updated successfully.");
+      _showToast("Password updated successfully.");
+
       _currentPasswordController.clear();
       _newPasswordController.clear();
       _confirmPasswordController.clear();
     } on FirebaseAuthException catch (e) {
       if (e.code == 'wrong-password') {
-        _showSnackBar("Incorrect current password.", isError: true);
+        _showToast("Incorrect current password.");
       } else if (e.code == 'weak-password') {
-        _showSnackBar("New password is too weak.", isError: true);
+        _showToast("New password is too weak.");
       } else {
-        _showSnackBar(e.message ?? "Something went wrong.", isError: true);
+        _showToast(e.message ?? "Something went wrong.");
       }
     } finally {
       setState(() => _isLoading = false);
@@ -81,31 +96,91 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final inputDecoration = InputDecoration(
+      filled: true,
+      fillColor: Colors.grey[200],
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide.none,
+      ),
+      labelStyle: GoogleFonts.poppins(color: Colors.grey[700]),
+    );
+
     return Scaffold(
-      appBar: AppBar(title: const Text("Change Password")),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        title: Text(
+          "Change Password",
+          style: GoogleFonts.poppins(color: Colors.black),
+        ),
+        backgroundColor: Colors.white,
+        elevation: 0,
+        iconTheme: const IconThemeData(color: Colors.black),
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(24.0),
         child: Form(
           key: _formKey,
           child: Column(
             children: [
               TextFormField(
                 controller: _currentPasswordController,
-                decoration: const InputDecoration(
+                obscureText: !_showCurrentPassword,
+                style: GoogleFonts.poppins(color: Colors.black),
+                decoration: inputDecoration.copyWith(
                   labelText: 'Current Password',
+                  prefixIcon: const Icon(Icons.lock, color: Colors.black),
+                  suffixIcon:
+                      _currentPasswordController.text.isNotEmpty
+                          ? IconButton(
+                            icon: Icon(
+                              _showCurrentPassword
+                                  ? Icons.visibility
+                                  : Icons.visibility_off,
+                              color: Colors.black,
+                            ),
+                            onPressed:
+                                () => setState(
+                                  () =>
+                                      _showCurrentPassword =
+                                          !_showCurrentPassword,
+                                ),
+                          )
+                          : null,
                 ),
-                obscureText: true,
                 validator:
                     (value) =>
                         value == null || value.isEmpty
                             ? 'Enter current password'
                             : null,
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 20),
               TextFormField(
                 controller: _newPasswordController,
-                decoration: const InputDecoration(labelText: 'New Password'),
-                obscureText: true,
+                obscureText: !_showNewPassword,
+                style: GoogleFonts.poppins(color: Colors.black),
+                decoration: inputDecoration.copyWith(
+                  labelText: 'New Password',
+                  prefixIcon: const Icon(
+                    Icons.lock_outline,
+                    color: Colors.black,
+                  ),
+                  suffixIcon:
+                      _newPasswordController.text.isNotEmpty
+                          ? IconButton(
+                            icon: Icon(
+                              _showNewPassword
+                                  ? Icons.visibility
+                                  : Icons.visibility_off,
+                              color: Colors.black,
+                            ),
+                            onPressed:
+                                () => setState(
+                                  () => _showNewPassword = !_showNewPassword,
+                                ),
+                          )
+                          : null,
+                ),
                 validator: (value) {
                   if (value == null || value.isEmpty)
                     return 'Enter new password';
@@ -114,26 +189,61 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                   return null;
                 },
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 20),
               TextFormField(
                 controller: _confirmPasswordController,
-                decoration: const InputDecoration(
+                obscureText: !_showConfirmPassword,
+                style: GoogleFonts.poppins(color: Colors.black),
+                decoration: inputDecoration.copyWith(
                   labelText: 'Confirm New Password',
+                  prefixIcon: const Icon(Icons.lock_reset, color: Colors.black),
+                  suffixIcon:
+                      _confirmPasswordController.text.isNotEmpty
+                          ? IconButton(
+                            icon: Icon(
+                              _showConfirmPassword
+                                  ? Icons.visibility
+                                  : Icons.visibility_off,
+                              color: Colors.black,
+                            ),
+                            onPressed:
+                                () => setState(
+                                  () =>
+                                      _showConfirmPassword =
+                                          !_showConfirmPassword,
+                                ),
+                          )
+                          : null,
                 ),
-                obscureText: true,
                 validator: (value) {
-                  if (value != _newPasswordController.text) {
+                  if (value != _newPasswordController.text)
                     return 'Passwords do not match';
-                  }
                   return null;
                 },
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 30),
               _isLoading
                   ? const CircularProgressIndicator()
                   : ElevatedButton(
                     onPressed: _changePassword,
-                    child: const Text("Update Password"),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.black,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 50,
+                        vertical: 15,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(24),
+                      ),
+                    ),
+                    child: Text(
+                      "Update Password",
+                      style: GoogleFonts.poppins(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
                   ),
             ],
           ),

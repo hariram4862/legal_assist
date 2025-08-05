@@ -64,14 +64,15 @@ class _MyAppState extends State<MyApp> {
             fontWeight: FontWeight.w600,
           ),
         ),
-        cardTheme: CardTheme(
+        cardTheme: CardThemeData(
           color: Colors.grey[100],
           elevation: 2,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
         ),
-        dialogTheme: DialogTheme(
+
+        dialogTheme: DialogThemeData(
           backgroundColor: Colors.grey[100],
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),

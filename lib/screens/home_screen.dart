@@ -24,7 +24,7 @@ class _HomePageState extends State<HomePage> {
   final List<Map<String, String>> _messages = [];
   final List<PlatformFile> _pickedFiles = [];
   String? _currentSessionId;
-  bool _isDarkTheme = false;
+  final bool _isDarkTheme = false;
 
   final WakeWordService _wakeWordService = WakeWordService();
   final User? user = FirebaseAuth.instance.currentUser;
@@ -123,20 +123,23 @@ class _HomePageState extends State<HomePage> {
           _messages.add({'role': 'bot', 'text': reply});
         });
       } else if (hasFiles) {
-        // Only files uploaded, show placeholder user message
+        // Only files uploaded, show user message and then upload
         setState(() {
           _messages.add({'role': 'user', 'text': '📁 Uploaded document(s)'});
           _messages.add({'role': 'bot', 'text': '...typing...'});
         });
-      }
 
-      if (hasFiles) {
-        await FileService().process(
+        final reply = await FileService().process(
           files: _pickedFiles,
           email: user?.email,
           sessionId: _currentSessionId,
         );
-        setState(() => _pickedFiles.clear());
+
+        setState(() {
+          _pickedFiles.clear();
+          _messages.removeLast(); // remove '...typing...'
+          _messages.add({'role': 'bot', 'text': reply});
+        });
       }
     }
   }
@@ -194,8 +197,6 @@ class _HomePageState extends State<HomePage> {
         ],
       ),
       drawer: CustomDrawer(
-        isDarkTheme: _isDarkTheme,
-        onThemeToggle: (val) => setState(() => _isDarkTheme = val),
         user: user,
         onSessionSelected:
             (sessionId, messages) => setState(() {
