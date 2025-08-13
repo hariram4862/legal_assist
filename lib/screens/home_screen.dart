@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:legal_assist/widgets/home_screen/send_prompt.dart';
+import 'package:legal_assist/api_services/send_prompt.dart';
 import 'package:legal_assist/widgets/home_screen/input_bar.dart';
 import 'package:legal_assist/widgets/home_screen/message_list.dart';
 import 'package:legal_assist/widgets/home_screen/picked_files_dialog.dart';
@@ -24,7 +24,6 @@ class _HomePageState extends State<HomePage> {
   final List<Map<String, String>> _messages = [];
   final List<PlatformFile> _pickedFiles = [];
   String? _currentSessionId;
-  final bool _isDarkTheme = false;
 
   final WakeWordService _wakeWordService = WakeWordService();
   final User? user = FirebaseAuth.instance.currentUser;
@@ -37,6 +36,7 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
     _initWakeWord();
+    // checkAppUpdate(context);
   }
 
   @override
@@ -104,43 +104,50 @@ class _HomePageState extends State<HomePage> {
     final hasFiles = _pickedFiles.isNotEmpty;
     FocusScope.of(context).unfocus();
 
-    if (hasPrompt || hasFiles) {
-      if (hasPrompt) {
-        setState(() {
-          _messages.add({'role': 'user', 'text': prompt});
-          _promptController.clear();
-          _messages.add({'role': 'bot', 'text': '...typing...'});
+    if (!hasPrompt && !hasFiles) return;
+
+    // Add user message(s)
+    if (hasPrompt) {
+      setState(() {
+        _messages.add({'role': 'user', 'text': prompt});
+        _promptController.clear();
+      });
+    } else if (hasFiles) {
+      setState(() {
+        _messages.add({'role': 'user', 'text': '📁 Uploaded document(s)'});
+      });
+    }
+
+    // show typing...
+    setState(() => _messages.add({'role': 'bot', 'text': '...typing...'}));
+
+    try {
+      final result = await FileService().process(
+        prompt: hasPrompt ? prompt : null,
+        files: hasFiles ? _pickedFiles : null,
+        email: user?.email,
+        sessionId: _currentSessionId,
+      );
+
+      setState(() {
+        _messages.removeLast(); // remove '...typing...'
+        _messages.add({
+          'role': 'bot',
+          'text': result['reply'] ?? 'No response',
         });
 
-        final reply = await FileService().process(
-          prompt: prompt,
-          email: user?.email,
-          sessionId: _currentSessionId,
-        );
+        // update/keep session id if backend created one
+        if (result['sessionId'] != null && result['sessionId']!.isNotEmpty) {
+          _currentSessionId = result['sessionId'];
+        }
 
-        setState(() {
-          _messages.removeLast();
-          _messages.add({'role': 'bot', 'text': reply});
-        });
-      } else if (hasFiles) {
-        // Only files uploaded, show user message and then upload
-        setState(() {
-          _messages.add({'role': 'user', 'text': '📁 Uploaded document(s)'});
-          _messages.add({'role': 'bot', 'text': '...typing...'});
-        });
-
-        final reply = await FileService().process(
-          files: _pickedFiles,
-          email: user?.email,
-          sessionId: _currentSessionId,
-        );
-
-        setState(() {
-          _pickedFiles.clear();
-          _messages.removeLast(); // remove '...typing...'
-          _messages.add({'role': 'bot', 'text': reply});
-        });
-      }
+        if (hasFiles) _pickedFiles.clear();
+      });
+    } catch (e) {
+      setState(() {
+        _messages.removeLast();
+        _messages.add({'role': 'bot', 'text': '❌ Error: ${e.toString()}'});
+      });
     }
   }
 

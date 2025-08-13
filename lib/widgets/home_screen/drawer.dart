@@ -1,6 +1,8 @@
+import 'package:dio/dio.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:legal_assist/screens/AccessSharedSessionScreen.dart';
 // import 'package:legal_assist/screens/change_pw.dart';
 import 'package:legal_assist/screens/chat_history_screen.dart';
 import 'package:legal_assist/screens/profile_screen.dart';
@@ -122,18 +124,20 @@ class _CustomDrawerState extends State<CustomDrawer> {
               }
             },
           ),
-          // _buildDrawerItem(
-          //   icon: Icons.lock_outline,
-          //   text: "Change Password",
-          //   onTap: () {
-          //     Navigator.push(
-          //       context,
-          //       MaterialPageRoute(
-          //         builder: (context) => const ChangePasswordScreen(),
-          //       ),
-          //     );
-          //   },
-          // ),
+          _buildDrawerItem(
+            icon: Icons.group_outlined,
+            text: "View Shared Chat",
+            onTap: () {
+              Navigator.pop(context); // Close the drawer
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                showModalBottomSheet(
+                  context: context,
+                  isScrollControlled: true,
+                  builder: (_) => const _ShareAccessBottomSheet(),
+                );
+              });
+            },
+          ),
           _buildDrawerItem(
             icon: Icons.logout,
             text: "Log Out",
@@ -169,6 +173,118 @@ class _CustomDrawerState extends State<CustomDrawer> {
         style: GoogleFonts.poppins(color: textColor, fontSize: 15),
       ),
       onTap: onTap,
+    );
+  }
+}
+
+class _ShareAccessBottomSheet extends StatefulWidget {
+  const _ShareAccessBottomSheet();
+
+  @override
+  State<_ShareAccessBottomSheet> createState() =>
+      _ShareAccessBottomSheetState();
+}
+
+class _ShareAccessBottomSheetState extends State<_ShareAccessBottomSheet> {
+  final _shareIdController = TextEditingController();
+  final _pinController = TextEditingController();
+  bool _loading = false;
+  String? _error;
+
+  void _submit() async {
+    final shareId = _shareIdController.text.trim();
+    final pin = _pinController.text.trim();
+
+    if (shareId.isEmpty || pin.isEmpty) {
+      setState(() => _error = "Please fill both fields");
+      return;
+    }
+
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+
+    try {
+      final response = await Dio().get(
+        "https://refined-able-grouper.ngrok-free.app/view_shared_session/$shareId",
+        queryParameters: {"pin": pin},
+      );
+
+      final data = response.data;
+      final sessionName = data['session_name'];
+      final List<dynamic> rawMessages = data['messages'];
+
+      final formattedMessages =
+          rawMessages
+              .map(
+                (msg) => {
+                  'role': msg['role'].toString(),
+                  'text': msg['text'].toString(),
+                },
+              )
+              .toList();
+
+      if (!context.mounted) return;
+      Navigator.pop(context); // close bottom sheet
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder:
+              (_) => AccessSharedChatScreen(
+                sessionName: sessionName,
+                messages: List<Map<String, String>>.from(formattedMessages),
+              ),
+        ),
+      );
+    } catch (e) {
+      setState(() {
+        _error = "❌ Invalid Share ID or PIN";
+      });
+    } finally {
+      setState(() => _loading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom,
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Wrap(
+          children: [
+            const Text(
+              "🔓 Access Shared Session",
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+            ),
+            const SizedBox(height: 20),
+            TextField(
+              controller: _shareIdController,
+              decoration: const InputDecoration(labelText: "Share ID"),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _pinController,
+              decoration: const InputDecoration(labelText: "PIN"),
+              keyboardType: TextInputType.number,
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton.icon(
+              onPressed: _loading ? null : _submit,
+              icon: const Icon(Icons.lock_open),
+              label: const Text("Unlock Chat"),
+            ),
+            if (_error != null) ...[
+              const SizedBox(height: 12),
+              Text(_error!, style: const TextStyle(color: Colors.red)),
+            ],
+          ],
+        ),
+      ),
     );
   }
 }

@@ -58,6 +58,8 @@ dependencies:
   timeago: ^3.7.1
   google_fonts: ^6.2.1
   open_filex: ^4.7.0
+  cloud_firestore: ^5.6.12
+  # install_plugin: ^2.1.0
 
 dev_dependencies:
   flutter_test:

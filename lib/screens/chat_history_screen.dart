@@ -1,9 +1,6 @@
-import 'dart:math';
-
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:dio/dio.dart';
-import 'package:share_plus/share_plus.dart';
 
 class Session {
   final String id;
@@ -31,7 +28,6 @@ Future<Map<String, dynamic>> fetchSessionChat(String sessionId) async {
 
   final data = response.data;
   final List<Map<String, String>> messages = [];
-  bool fabMenuOpen = false;
 
   if (data.containsKey('messages') && data['messages'] is List) {
     for (var msg in data['messages']) {
@@ -88,9 +84,9 @@ class _ChatHistoryScreenState extends State<ChatHistoryScreen> {
     });
   }
 
-  void _clearSelection() {
-    setState(() => _selectedSessionIds.clear());
-  }
+  // void _clearSelection() {
+  //   setState(() => _selectedSessionIds.clear());
+  // }
 
   Future<void> _renameSession() async {
     if (_selectedSessionIds.length != 1) return;
@@ -173,27 +169,38 @@ class _ChatHistoryScreenState extends State<ChatHistoryScreen> {
   }
 
   Future<void> _shareSessions() async {
-    if (_selectedSessionIds.isEmpty) return;
+    if (_selectedSessionIds.length != 1) return;
+    final sessionId = _selectedSessionIds.first;
 
     try {
-      final selected = _allSessions.where(
-        (s) => _selectedSessionIds.contains(s.id),
+      final response = await Dio().post(
+        "https://refined-able-grouper.ngrok-free.app/share_session/$sessionId",
       );
-      String finalText = "";
 
-      for (var session in selected) {
-        final chatData = await fetchSessionChat(session.id);
-        final messages = chatData['messages'] as List<Map<String, String>>;
-        final text = messages
-            .map((msg) => "${msg['role']!.toUpperCase()}: ${msg['text']}")
-            .join("\n\n");
-        finalText +=
-            "Session: ${session.title}\n\n$text\n\n-----------------\n\n";
-      }
+      final shareId = response.data['share_id'];
+      final pin = response.data['pin'];
 
-      await Share.share(
-        finalText,
-        subject: "${_selectedSessionIds.length} sessions",
+      // Show dialog with Share ID & PIN
+      await showDialog(
+        context: context,
+        builder:
+            (_) => AlertDialog(
+              title: const Text("🔐 Share This Session"),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SelectableText("Share ID: $shareId"),
+                  const SizedBox(height: 10),
+                  SelectableText("PIN: $pin"),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text("Done"),
+                ),
+              ],
+            ),
       );
     } catch (e) {
       _showError("Share failed", e);
@@ -314,7 +321,6 @@ class _ChatHistoryScreenState extends State<ChatHistoryScreen> {
                   itemBuilder: (context, index) {
                     final session = _allSessions[index];
                     final isSelected = _selectedSessionIds.contains(session.id);
-                    final isSelectable = _isSelectionMode;
 
                     return GestureDetector(
                       onTap: () async {

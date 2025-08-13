@@ -6,8 +6,13 @@ import 'package:google_fonts/google_fonts.dart';
 class MessageBubble extends StatefulWidget {
   final Map<String, String> message;
   final bool isEditable;
-
-  const MessageBubble(this.message, {super.key, this.isEditable = true});
+  final bool enableTypingAnimation;
+  const MessageBubble(
+    this.message, {
+    super.key,
+    this.isEditable = true,
+    this.enableTypingAnimation = true,
+  });
 
   @override
   State<MessageBubble> createState() => _MessageBubbleState();
@@ -22,7 +27,9 @@ class _MessageBubbleState extends State<MessageBubble> {
 
   bool get isUser => widget.message['role'] == 'user';
   bool get isTypingBubble =>
-      widget.message['text'] == '...typing...' && !isUser;
+      widget.enableTypingAnimation &&
+      widget.message['text'] == '...typing...' &&
+      !isUser;
   @override
   void didUpdateWidget(covariant MessageBubble oldWidget) {
     super.didUpdateWidget(oldWidget);
@@ -39,7 +46,9 @@ class _MessageBubbleState extends State<MessageBubble> {
       text: widget.message['text'] ?? '',
     );
 
-    if (!isUser && !isTypingBubble) {
+    if (!isUser &&
+        widget.enableTypingAnimation &&
+        widget.message['text'] == '...typing...') {
       _startTypingAnimation();
     } else {
       _visibleText = widget.message['text'] ?? '';
@@ -47,6 +56,8 @@ class _MessageBubbleState extends State<MessageBubble> {
   }
 
   void _startTypingAnimation() {
+    if (!widget.enableTypingAnimation) return;
+
     final fullText = widget.message['text'] ?? '';
     int index = 0;
     _visibleText = '';
