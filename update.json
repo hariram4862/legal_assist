@@ -1,6 +1,5 @@
 {
   "version": "1.0.0",
-  "apk_url": "https://github.com/YOUR_USERNAME/YOUR_REPO/releases/latest/download/app-release.apk",
-  "release_notes": "Initial release."
+  "apk_url": "https://github.com/hariram4862/legal_assist/releases/latest/download/app-release.apk",
+  "release_notes": "Automatic update from GitHub Actions."
 }
- 
