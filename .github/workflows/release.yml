@@ -1,0 +1,56 @@
+name: Build and Release APK
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.32.8' # your Flutter version
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build APK
+        run: flutter build apk --release
+
+      - name: Get version
+        id: get_version
+        run: |
+          VERSION=$(grep 'version:' pubspec.yaml | head -n 1 | awk '{print $2}' | cut -d+ -f1)
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ steps.get_version.outputs.version }}
+          name: Release v${{ steps.get_version.outputs.version }}
+          body: "Automatic build from main branch."
+          draft: false
+          prerelease: false
+          files: build/app/outputs/flutter-apk/app-release.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Update update.json
+        run: |
+          echo '{
+            "version": "${{ steps.get_version.outputs.version }}",
+            "apk_url": "https://github.com/${{ github.repository }}/releases/latest/download/app-release.apk",
+            "release_notes": "Automatic update from GitHub Actions."
+          }' > update.json
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git add update.json
+          git commit -m "Update update.json for version ${{ steps.get_version.outputs.version }}"
+          git push

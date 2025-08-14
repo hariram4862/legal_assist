@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:legal_assist/api_services/send_prompt.dart';
+import 'package:legal_assist/api_services/update_checker.dart';
 import 'package:legal_assist/widgets/home_screen/input_bar.dart';
 import 'package:legal_assist/widgets/home_screen/message_list.dart';
 import 'package:legal_assist/widgets/home_screen/picked_files_dialog.dart';
@@ -35,8 +36,8 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
+    UpdateChecker.checkForUpdate(context);
     _initWakeWord();
-    // checkAppUpdate(context);
   }
 
   @override

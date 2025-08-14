@@ -1,68 +1,60 @@
-// import 'package:flutter/material.dart';
-// import 'package:package_info_plus/package_info_plus.dart';
-// import 'package:cloud_firestore/cloud_firestore.dart';
-// import 'package:permission_handler/permission_handler.dart';
-// import 'package:dio/dio.dart';
-// import 'package:install_plugin/install_plugin.dart';
-// import 'package:path_provider/path_provider.dart';
+import 'dart:convert';
+import 'package:flutter/material.dart';
+import 'package:package_info_plus/package_info_plus.dart';
+import 'package:http/http.dart' as http;
+import 'package:url_launcher/url_launcher.dart';
 
-// Future<void> checkAppUpdate(BuildContext context) async {
-//   try {
-//     final info = await PackageInfo.fromPlatform();
-//     final currentVersion = info.version;
+class UpdateChecker {
+  static Future<void> checkForUpdate(BuildContext context) async {
+    try {
+      final packageInfo = await PackageInfo.fromPlatform();
+      final currentVersion = packageInfo.version;
 
-//     final doc =
-//         await FirebaseFirestore.instance
-//             .collection('app_config')
-//             .doc('version_info')
-//             .get();
+      final response = await http.get(
+        Uri.parse(
+          "https://raw.githubusercontent.com/YOUR_USERNAME/YOUR_REPO/main/update.json",
+        ),
+      );
 
-//     if (!doc.exists) return;
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final latestVersion = data['version'];
+        final apkUrl = data['apk_url'];
+        final releaseNotes = data['release_notes'];
 
-//     final data = doc.data();
-//     final latestVersion = data?['latest_version'];
-//     final updateUrl = data?['update_url'];
-//     final isMandatory = data?['mandatory'] ?? false;
-
-//     if (currentVersion != latestVersion && updateUrl != null) {
-//       showDialog(
-//         context: context,
-//         barrierDismissible: !isMandatory,
-//         builder:
-//             (_) => AlertDialog(
-//               title: const Text("Update Available"),
-//               content: Text("A new version ($latestVersion) is available."),
-//               actions: [
-//                 if (!isMandatory)
-//                   TextButton(
-//                     child: const Text("Later"),
-//                     onPressed: () => Navigator.pop(context),
-//                   ),
-//                 ElevatedButton(
-//                   onPressed: () {
-//                     Navigator.pop(context);
-//                     downloadAndInstallApk(updateUrl);
-//                   },
-//                   child: const Text("Update Now"),
-//                 ),
-//               ],
-//             ),
-//       );
-//     }
-//   } catch (e) {
-//     print("Update check error: $e");
-//   }
-// }
-
-// Future<void> downloadAndInstallApk(String apkUrl) async {
-//   var status = await Permission.storage.request();
-//   if (!status.isGranted) return;
-
-//   final dir = await getExternalStorageDirectory();
-//   final filePath = '${dir!.path}/update.apk';
-
-//   final dio = Dio();
-//   await dio.download(apkUrl, filePath);
-
-//   await InstallPlugin.installApk(filePath); // ✅ Correct
-// }
+        if (latestVersion != currentVersion) {
+          showDialog(
+            context: context,
+            builder:
+                (_) => AlertDialog(
+                  title: const Text("Update Available"),
+                  content: Text(
+                    "A new version ($latestVersion) is available.\n\nChanges:\n$releaseNotes",
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text("Later"),
+                    ),
+                    ElevatedButton(
+                      onPressed: () async {
+                        final uri = Uri.parse(apkUrl);
+                        if (await canLaunchUrl(uri)) {
+                          await launchUrl(
+                            uri,
+                            mode: LaunchMode.externalApplication,
+                          );
+                        }
+                      },
+                      child: const Text("Update Now"),
+                    ),
+                  ],
+                ),
+          );
+        }
+      }
+    } catch (e) {
+      debugPrint("Update check failed: $e");
+    }
+  }
+}
