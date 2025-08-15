@@ -9,6 +9,7 @@ class UpdateChecker {
     try {
       final packageInfo = await PackageInfo.fromPlatform();
       final currentVersion = packageInfo.version;
+      final currentBuildNumber = int.tryParse(packageInfo.buildNumber) ?? 0;
 
       final response = await http.get(
         Uri.parse(
@@ -22,7 +23,19 @@ class UpdateChecker {
         final apkUrl = data['apk_url'];
         final releaseNotes = data['release_notes'];
 
-        if (latestVersion != currentVersion) {
+        // Extract build number from update.json version if format is x.y.z+n
+        String latestVersionOnly = latestVersion;
+        int latestBuildNumber = 0;
+
+        if (latestVersion.contains('+')) {
+          final parts = latestVersion.split('+');
+          latestVersionOnly = parts[0];
+          latestBuildNumber = int.tryParse(parts[1]) ?? 0;
+        }
+
+        // Compare: show update if version changes OR build number increases
+        if (latestVersionOnly != currentVersion ||
+            latestBuildNumber > currentBuildNumber) {
           showDialog(
             context: context,
             builder:
