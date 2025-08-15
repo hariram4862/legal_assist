@@ -5,11 +5,18 @@ import 'package:dio/dio.dart';
 class Session {
   final String id;
   String title;
+  final DateTime createdAt;
 
-  Session({required this.id, required this.title});
+  Session({required this.id, required this.title, required this.createdAt});
 
   factory Session.fromJson(Map<String, dynamic> json) {
-    return Session(id: json['_id'], title: json['session_name'] ?? 'Untitled');
+    final utcTime = DateTime.parse(json['created_at']).toUtc();
+
+    return Session(
+      id: json['_id'],
+      title: json['session_name'] ?? 'Untitled',
+      createdAt: utcTime.toLocal(),
+    );
   }
 }
 
@@ -130,6 +137,25 @@ class _ChatHistoryScreenState extends State<ChatHistoryScreen> {
     }
   }
 
+  String _formatTimeAgo(DateTime date) {
+    final now = DateTime.now(); // already local
+    final difference = now.difference(date); // date is local
+
+    if (difference.inSeconds < 5) {
+      return 'Just now';
+    } else if (difference.inSeconds < 60) {
+      return '${difference.inSeconds}s ago';
+    } else if (difference.inMinutes < 60) {
+      return '${difference.inMinutes}m ago';
+    } else if (difference.inHours < 24) {
+      return '${difference.inHours}h ago';
+    } else if (difference.inDays < 7) {
+      return '${difference.inDays}d ago';
+    } else {
+      return '${date.day}/${date.month}/${date.year}';
+    }
+  }
+
   Future<void> _deleteSessions() async {
     if (_selectedSessionIds.isEmpty) return;
 
@@ -180,27 +206,39 @@ class _ChatHistoryScreenState extends State<ChatHistoryScreen> {
       final shareId = response.data['share_id'];
       final pin = response.data['pin'];
 
-      // Show dialog with Share ID & PIN
-      await showDialog(
+      // Show bottom sheet instead of dialog
+      await showModalBottomSheet(
         context: context,
-        builder:
-            (_) => AlertDialog(
-              title: const Text("🔐 Share This Session"),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  SelectableText("Share ID: $shareId"),
-                  const SizedBox(height: 10),
-                  SelectableText("PIN: $pin"),
-                ],
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text("Done"),
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        ),
+        builder: (context) {
+          return Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  "🔐 Share This Session",
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 12),
+                SelectableText("Share ID: $shareId"),
+                const SizedBox(height: 10),
+                SelectableText("PIN: $pin"),
+                const SizedBox(height: 20),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: ElevatedButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text("Done"),
+                  ),
                 ),
               ],
             ),
+          );
+        },
       );
     } catch (e) {
       _showError("Share failed", e);
@@ -403,8 +441,8 @@ class _ChatHistoryScreenState extends State<ChatHistoryScreen> {
                                   ),
                                 ),
                               ),
-                              const Text(
-                                "2d ago",
+                              Text(
+                                _formatTimeAgo(session.createdAt),
                                 style: TextStyle(
                                   fontSize: 12,
                                   color: Colors.grey,
