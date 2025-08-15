@@ -12,7 +12,7 @@ class UpdateChecker {
 
       final response = await http.get(
         Uri.parse(
-          "https://raw.githubusercontent.com/YOUR_USERNAME/YOUR_REPO/main/update.json",
+          "https://raw.githubusercontent.com/hariram4862/legal_assist/main/update.json",
         ),
       );
 
