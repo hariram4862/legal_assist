@@ -51,11 +51,21 @@ class UpdateChecker {
                     ),
                     ElevatedButton(
                       onPressed: () async {
-                        final uri = Uri.parse(apkUrl);
-                        if (await canLaunchUrl(uri)) {
-                          await launchUrl(
+                        final uri = Uri.parse(apkUrl.trim());
+                        try {
+                          final launched = await launchUrl(
                             uri,
                             mode: LaunchMode.externalApplication,
+                          );
+                          if (!launched) {
+                            throw 'Could not launch $apkUrl';
+                          }
+                        } catch (e) {
+                          debugPrint('Launch failed: $e');
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text("Could not open download link"),
+                            ),
                           );
                         }
                       },
