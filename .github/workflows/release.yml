@@ -1,10 +1,3 @@
-name: Build and Release APK
-
-on:
-  push:
-    branches:
-      - main
-
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -13,10 +6,35 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
+      - name: Auto bump patch version in pubspec.yaml
+        run: |
+          VERSION_LINE=$(grep 'version:' pubspec.yaml)
+          CURRENT_VERSION=$(echo $VERSION_LINE | awk '{print $2}' | cut -d+ -f1)
+          BUILD_NUMBER=$(echo $VERSION_LINE | awk '{print $2}' | cut -d+ -f2)
+
+          # If build number is empty, set to 1
+          if [ -z "$BUILD_NUMBER" ]; then
+            BUILD_NUMBER=1
+          fi
+
+          # Split version into parts
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT_VERSION"
+
+          # Increment patch version
+          PATCH=$((PATCH + 1))
+
+          NEW_VERSION="$MAJOR.$MINOR.$PATCH"
+          NEW_BUILD=$((BUILD_NUMBER + 1))
+
+          echo "Updating version to $NEW_VERSION+$NEW_BUILD"
+          sed -i "s/^version:.*/version: $NEW_VERSION+$NEW_BUILD/" pubspec.yaml
+
+          cat pubspec.yaml | grep version:
+
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.32.8' # your Flutter version
+          flutter-version: '3.32.8'
 
       - name: Install dependencies
         run: flutter pub get
@@ -51,6 +69,6 @@ jobs:
           }' > update.json
           git config user.name github-actions
           git config user.email github-actions@github.com
-          git add update.json
+          git add update.json pubspec.yaml
           git commit -m "Update update.json for version ${{ steps.get_version.outputs.version }}"
           git push
