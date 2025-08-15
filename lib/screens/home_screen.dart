@@ -181,7 +181,7 @@ class _HomePageState extends State<HomePage> {
         foregroundColor: Colors.black,
         centerTitle: true,
         title: const Text(
-          'Voice Intell',
+          'Voice Intelligence',
 
           style: TextStyle(fontWeight: FontWeight.w600, fontSize: 20),
         ),
