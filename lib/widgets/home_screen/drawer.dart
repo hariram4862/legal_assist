@@ -207,7 +207,7 @@ class _ShareAccessBottomSheetState extends State<_ShareAccessBottomSheet> {
 
     try {
       final response = await Dio().get(
-        "https://refined-able-grouper.ngrok-free.app/view_shared_session/$shareId",
+        "https://voice-intelligence-app.azurewebsites.net/view_shared_session/$shareId",
         queryParameters: {"pin": pin},
       );
 

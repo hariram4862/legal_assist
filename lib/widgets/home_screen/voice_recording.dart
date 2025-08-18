@@ -40,7 +40,7 @@ class AudioService {
   Future<String?> _transcribe(String path) async {
     try {
       final dio = Dio();
-      const url = 'https://refined-able-grouper.ngrok-free.app/transcribe';
+      const url = 'https://voice-intelligence-app.azurewebsites.net/transcribe';
 
       final formData = FormData.fromMap({
         'file': await MultipartFile.fromFile(path, filename: 'voice.wav'),

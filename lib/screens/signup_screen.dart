@@ -233,7 +233,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
       );
       Dio dio = Dio();
       final response = await dio.post(
-        'https://refined-able-grouper.ngrok-free.app/register_user',
+        'https://voice-intelligence-app.azurewebsites.net/register_user',
         data: FormData.fromMap({
           'email': email,
           'full_name': name,

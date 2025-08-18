@@ -210,7 +210,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
       Dio dio = Dio();
       final response = await dio.post(
-        'https://refined-able-grouper.ngrok-free.app/update_last_login',
+        'https://voice-intelligence-app.azurewebsites.net/update_last_login',
         data: FormData.fromMap({
           'email': _emailController.text.trim(),
           'last_login_at': DateFormat(

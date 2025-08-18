@@ -22,7 +22,7 @@ class Session {
 
 Future<List<Session>> fetchSessions(String email) async {
   final response = await Dio().get(
-    'https://refined-able-grouper.ngrok-free.app/get_sessions/$email',
+    'https://voice-intelligence-app.azurewebsites.net/get_sessions/$email',
   );
   final List data = response.data['sessions'];
   return data.map((e) => Session.fromJson(e)).toList();
@@ -30,7 +30,7 @@ Future<List<Session>> fetchSessions(String email) async {
 
 Future<Map<String, dynamic>> fetchSessionChat(String sessionId) async {
   final response = await Dio().get(
-    'https://refined-able-grouper.ngrok-free.app/get_session_chat/$sessionId',
+    'https://voice-intelligence-app.azurewebsites.net/get_session_chat/$sessionId',
   );
 
   final data = response.data;
@@ -127,7 +127,7 @@ class _ChatHistoryScreenState extends State<ChatHistoryScreen> {
     if (newName != null && newName.trim().isNotEmpty) {
       try {
         await Dio().post(
-          "https://refined-able-grouper.ngrok-free.app/rename_session",
+          "https://voice-intelligence-app.azurewebsites.net/rename_session",
           data: {"session_id": session.id, "new_name": newName.trim()},
         );
         _loadSessions();
@@ -184,7 +184,7 @@ class _ChatHistoryScreenState extends State<ChatHistoryScreen> {
       try {
         for (var id in _selectedSessionIds) {
           await Dio().delete(
-            "https://refined-able-grouper.ngrok-free.app/delete_session/$id",
+            "https://voice-intelligence-app.azurewebsites.net/delete_session/$id",
           );
         }
         _loadSessions();
@@ -200,7 +200,7 @@ class _ChatHistoryScreenState extends State<ChatHistoryScreen> {
 
     try {
       final response = await Dio().post(
-        "https://refined-able-grouper.ngrok-free.app/share_session/$sessionId",
+        "https://voice-intelligence-app.azurewebsites.net/share_session/$sessionId",
       );
 
       final shareId = response.data['share_id'];

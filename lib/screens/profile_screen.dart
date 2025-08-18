@@ -30,7 +30,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     try {
       final dio = Dio();
       final response = await dio.get(
-        "https://refined-able-grouper.ngrok-free.app/get_user_details/$email",
+        "https://voice-intelligence-app.azurewebsites.net/get_user_details/$email",
       );
 
       if (response.statusCode == 200 &&
@@ -67,7 +67,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       final dio = Dio();
 
       final response = await dio.post(
-        "https://refined-able-grouper.ngrok-free.app/update_user_details/",
+        "https://voice-intelligence-app.azurewebsites.net/update_user_details/",
         data: FormData.fromMap({
           "email": _userEmail,
           "full_name": _nameController.text,

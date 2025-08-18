@@ -6,7 +6,8 @@ class FileService {
   final Dio _dio = Dio();
 
   // Base
-  static const String _base = 'https://refined-able-grouper.ngrok-free.app';
+  static const String _base =
+      'https://voice-intelligence-app.azurewebsites.net';
 
   // New split routes
   static const String _promptOnly = '$_base/v1/prompt-only';
