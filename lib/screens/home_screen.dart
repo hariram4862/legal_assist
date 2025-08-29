@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:legal_assist/api_services/send_prompt.dart';
 import 'package:legal_assist/api_services/update_checker.dart';
+import 'package:legal_assist/screens/quiz_screen.dart';
 import 'package:legal_assist/widgets/home_screen/input_bar.dart';
 import 'package:legal_assist/widgets/home_screen/message_list.dart';
 import 'package:legal_assist/widgets/home_screen/picked_files_dialog.dart';
@@ -188,6 +189,23 @@ class _HomePageState extends State<HomePage> {
         actions: [
           //  Icon(Icons.add_circle_outline_sharp
           // icon: const Icon(Icons.autorenew_rounded),
+          IconButton(
+            icon: Image.asset(
+              'assets/images/new_chat_icon.png',
+              height: 25,
+              width: 25,
+            ),
+            onPressed:
+                () => setState(() {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const QuizPage(email: "you@example.com"),
+                    ),
+                  );
+                }),
+          ),
+
           IconButton(
             icon: Image.asset(
               'assets/images/new_chat_icon.png',
